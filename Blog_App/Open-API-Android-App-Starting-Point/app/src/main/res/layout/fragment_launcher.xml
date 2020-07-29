@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#fff"
+        android:fillViewport="true"
+        tools:context=".ui.auth.LauncherFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <View android:layout_width="0.5dp"
+                android:layout_height="0.5dp"
+                android:focusableInTouchMode="true"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                android:id="@+id/focusable_view"
+                >
+        </View>
+
+
+        <!-- Logo imagaview        -->
+        <ImageView
+                android:id="@+id/imageview_logo"
+                android:layout_width="0dp"
+                android:layout_height="75dp"
+                android:src="@drawable/codingwithmitch_logo"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:ignore="ContentDescription" />
+        <!-- Login Textview      -->
+        <TextView
+                android:textColor="#000"
+                android:textSize="25sp"
+                android:id="@+id/tv_login"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/login_label"
+                app:layout_constraintBottom_toTopOf="@id/tv_regiter"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/imageview_logo" />
+
+        <!-- Register Textview         -->
+        <TextView
+                android:textColor="#000"
+                android:textSize="25sp"
+                android:layout_marginTop="30dp"
+                android:id="@+id/tv_regiter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/register_label"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_login" />
+
+        <!-- Forgot password Textview       -->
+        <TextView
+                android:textColor="@color/link_blue"
+                android:textSize="16sp"
+                android:layout_marginTop="30dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/forgot_password_label"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_regiter" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>
