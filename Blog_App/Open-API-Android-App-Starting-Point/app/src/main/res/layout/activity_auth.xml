@@ -7,8 +7,25 @@
         android:layout_height="match_parent"
         android:background="#fff">
 
+    <FrameLayout
+            android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
+            <fragment
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:name="androidx.navigation.fragment.NavHostFragment"
+                    android:id="@+id/auth_nav_host_fragment"
+                    app:defaultNavHost="true"
+                    app:navGraph="@navigation/auth_nav_graph"
+                    />
 
+    </FrameLayout>
 
     <ProgressBar
             android:layout_width="wrap_content"

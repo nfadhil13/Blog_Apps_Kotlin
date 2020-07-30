@@ -67,7 +67,7 @@
     <string name="are_you_sure_delete">Are you sure you want to delete this? This can\'t be un-done.</string>
     <string name="text_info">Info</string>
     <string name="delete">Delete</string>
-    <string name="login_label">login</string>
+    <string name="login_label">Login</string>
     <string name="register_label">Register</string>
     <string name="forgot_password_label">Forgot Password</string>
 
