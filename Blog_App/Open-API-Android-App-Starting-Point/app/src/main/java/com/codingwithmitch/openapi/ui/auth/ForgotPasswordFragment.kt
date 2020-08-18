@@ -9,23 +9,10 @@ import androidx.navigation.fragment.findNavController
 import com.codingwithmitch.openapi.R
 import kotlinx.android.synthetic.main.fragment_launcher.*
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-/**
- * A simple [Fragment] subclass.
- * Use the [ForgotPasswordFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class ForgotPasswordFragment : Fragment() {
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+class ForgotPasswordFragment : BaseAuthFragment() {
 
 
-    }
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,6 +20,12 @@ class ForgotPasswordFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_forgot_password, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        println("DEBUG : ${viewModel.hashCode()}")
+//        focusable_view.requestFocus()
     }
 
 

@@ -7,20 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import com.codingwithmitch.openapi.R
+import com.codingwithmitch.openapi.session.SessionManager
 import kotlinx.android.synthetic.main.fragment_launcher.*
+import javax.inject.Inject
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [LauncherFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class LauncherFragment : Fragment() {
-
+class LauncherFragment :  BaseAuthFragment()  {
+    
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -32,7 +25,9 @@ class LauncherFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        println("DEBUG : ${viewModel.hashCode()}")
         setListener()
+
 //        focusable_view.requestFocus()
     }
 
@@ -60,6 +55,6 @@ class LauncherFragment : Fragment() {
     }
 
     private fun navRegistration() {
-        findNavController().navigate(R.id.registerFragment)
+        findNavController().navigate(R.id.action_launcherFragment_to_registerFragment)
     }
 }
