@@ -16,11 +16,12 @@ import com.codingwithmitch.openapi.ui.auth.state.AuthStateEvent.LoginAttemptEven
 import com.codingwithmitch.openapi.ui.auth.state.LogInFields
 import com.codingwithmitch.openapi.util.GenericApiResponse
 import kotlinx.android.synthetic.main.fragment_login.*
+import java.lang.Exception
 
 
 class LoginFragment :  BaseAuthFragment()  {
 
-    private lateinit var binding : FragmentLoginBinding
+    private var binding : FragmentLoginBinding? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,7 +29,7 @@ class LoginFragment :  BaseAuthFragment()  {
     ): View? {
         // Inflate the layout for this fragment
         binding = DataBindingUtil.inflate(inflater,R.layout.fragment_login, container, false)
-        return binding.root
+        return binding?.root ?: throw Exception("Fail to inflate the binding")
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -42,7 +43,7 @@ class LoginFragment :  BaseAuthFragment()  {
     }
 
     private fun subscribeListener() {
-        binding.apply {
+        binding?.apply {
             loginButton.setOnClickListener {
                 login()
             }
@@ -50,27 +51,37 @@ class LoginFragment :  BaseAuthFragment()  {
     }
 
     private fun login(){
-        viewModel.setStateEvent(LoginAttemptEvent(
-            email = binding.inputEmail.text.toString(),
-            password =  binding.inputPassword.text.toString()
-        ))
+        binding?.let{nonNullBinding->
+            viewModel.setStateEvent(LoginAttemptEvent(
+                email = nonNullBinding.inputEmail.text.toString(),
+                password =  nonNullBinding.inputPassword.text.toString()
+            ))
+        }
+        Log.d(TAG,"Try to log in with : ${binding!!.inputEmail.text} and ${binding!!.inputPassword.text}")
     }
 
     private fun subscribeObservers(){
         viewModel.viewState.observe(viewLifecycleOwner, Observer {viewState ->
-            viewState.logInField?.let {loginFiled->
-                loginFiled.login_email?.let{email -> binding.inputEmail.setText(email)}
-                loginFiled.login_password?.let{password -> binding.inputPassword.setText(password)}
+            binding?.let{nonNullBinding->
+                viewState.logInField?.let {loginFiled->
+                    loginFiled.login_email?.let{email -> nonNullBinding.inputEmail.setText(email)}
+                    loginFiled.login_password?.let{password -> nonNullBinding.inputPassword.setText(password)}
+                }
             }
         })
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        viewModel.setLogInFields(
-            LogInFields(
-                binding.inputEmail.text.toString(),
-                binding.inputPassword.text.toString())
-        )
+        binding?.let {nonNullBInding->
+            viewModel.setLogInFields(
+                LogInFields(
+                    nonNullBInding.inputEmail.text.toString(),
+                    nonNullBInding.inputPassword.text.toString())
+            )
+            binding = null
+        }
+
     }
+
 }

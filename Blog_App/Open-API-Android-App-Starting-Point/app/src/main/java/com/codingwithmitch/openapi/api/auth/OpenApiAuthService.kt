@@ -18,6 +18,8 @@ interface OpenApiAuthService {
         @Field("password") password : String
     ) : LiveData<GenericApiResponse<LoginResponse>>
 
+
+
     @POST("account/register")
     @FormUrlEncoded
     fun register(

@@ -4,6 +4,10 @@ import com.codingwithmitch.openapi.dependcy_injection.auth.AuthFragmentBuildersM
 import com.codingwithmitch.openapi.dependcy_injection.auth.AuthModule
 import com.codingwithmitch.openapi.dependcy_injection.auth.AuthScope
 import com.codingwithmitch.openapi.dependcy_injection.auth.AuthViewModelModule
+import com.codingwithmitch.openapi.dependcy_injection.main.MainFragmentBuildersModule
+import com.codingwithmitch.openapi.dependcy_injection.main.MainModule
+import com.codingwithmitch.openapi.dependcy_injection.main.MainScope
+import com.codingwithmitch.openapi.dependcy_injection.main.MainViewModelModule
 import com.codingwithmitch.openapi.ui.auth.AuthActivity
 import com.codingwithmitch.openapi.ui.main.MainActivity
 import dagger.Module
@@ -22,6 +26,13 @@ abstract class ActivityBuildersModule {
     )
     abstract fun contributeAuthActivity() : AuthActivity
 
-    @ContributesAndroidInjector
+    @MainScope
+    @ContributesAndroidInjector(
+        modules = [
+            MainFragmentBuildersModule::class,
+            MainModule::class,
+            MainViewModelModule::class
+        ]
+    )
     abstract fun contributeMainActivity() : MainActivity
 }

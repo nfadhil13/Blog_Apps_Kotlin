@@ -12,13 +12,14 @@ abstract class BaseViewModel<StateEvent , ViewState> : ViewModel(){
 
     val TAG : String = "AppDebug"
 
+
     protected val _stateEvent : MutableLiveData<StateEvent> = MutableLiveData()
 
 
     protected val _viewState : MutableLiveData<ViewState> = MutableLiveData()
 
 
-    val viewState : LiveData<ViewState>
+     val viewState : LiveData<ViewState>
         get() = _viewState
 
 
@@ -38,6 +39,7 @@ abstract class BaseViewModel<StateEvent , ViewState> : ViewModel(){
         val value = viewState.value?.let { 
             it
         }?: initNewViewState()
+        println(viewState.value)
         return value
     }
 

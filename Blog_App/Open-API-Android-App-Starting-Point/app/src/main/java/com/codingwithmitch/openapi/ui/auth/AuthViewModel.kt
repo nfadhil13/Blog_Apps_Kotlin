@@ -49,7 +49,7 @@ constructor(
             }
 
             is CheckPrevioustAuthEvent -> {
-                return AbsenLiveData.create()
+                return authRepository.checkPreviousAuthUser()
             }
         }
     }
@@ -85,5 +85,7 @@ constructor(
         super.onCleared()
         cancelActiveJob()
     }
+
+
 
 }

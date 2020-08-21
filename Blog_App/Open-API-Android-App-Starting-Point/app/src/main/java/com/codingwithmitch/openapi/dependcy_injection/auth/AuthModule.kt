@@ -1,5 +1,6 @@
 package com.codingwithmitch.openapi.dependcy_injection.auth
 
+import android.content.SharedPreferences
 import com.codingwithmitch.openapi.api.auth.OpenApiAuthService
 import com.codingwithmitch.openapi.persistence.AccountPropertiesDao
 import com.codingwithmitch.openapi.persistence.AuthTokenDao
@@ -20,19 +21,24 @@ class AuthModule {
             .create(OpenApiAuthService::class.java)
     }
 
+
     @AuthScope
     @Provides
     fun provideAuthRepository(
         sessionManager: SessionManager,
         authTokenDao: AuthTokenDao,
         accountPropertiesDao: AccountPropertiesDao,
-        openApiAuthService: OpenApiAuthService
+        openApiAuthService: OpenApiAuthService,
+        sharedPreferences: SharedPreferences,
+        sharedPreferencesEditor : SharedPreferences.Editor
     ) : AuthRepository{
         return AuthRepository(
             authTokenDao,
             accountPropertiesDao,
             openApiAuthService,
-            sessionManager
+            sessionManager,
+            sharedPreferences,
+            sharedPreferencesEditor
         )
     }
 

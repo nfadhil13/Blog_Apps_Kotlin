@@ -10,11 +10,13 @@ import com.codingwithmitch.openapi.ui.Response
 import com.codingwithmitch.openapi.ui.ResponseType
 import com.codingwithmitch.openapi.ui.auth.state.AuthViewState
 import com.codingwithmitch.openapi.util.Constants.Companion.NETWORK_TIMEOUT
+import com.codingwithmitch.openapi.util.Constants.Companion.TESTING_CACHE_DELAY
 import com.codingwithmitch.openapi.util.Constants.Companion.TESTING_NETWORK_DELAY
 import com.codingwithmitch.openapi.util.ErrorHandler
 import com.codingwithmitch.openapi.util.ErrorHandler.Companion.ERROR_CHECK_NETWORK_CONNECTION
 import com.codingwithmitch.openapi.util.ErrorHandler.Companion.ERROR_UNKNOWN
-import com.codingwithmitch.openapi.util.ErrorHandler.Companion.UNABLE_TODO_OPERATION_WITHOUT_INTERNET
+
+import com.codingwithmitch.openapi.util.ErrorHandler.Companion.UNABLE_TODO_OPERATION_WO_INTERNET
 import com.codingwithmitch.openapi.util.ErrorHandler.Companion.UNABLE_TO_RESOLVE_HOST
 import com.codingwithmitch.openapi.util.GenericApiResponse
 import kotlinx.coroutines.*
@@ -22,8 +24,10 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import java.lang.Error
 
-abstract class NetworkBoundResource<ResponseObject, ViewStateType>(
-    isNetworkAvailable: Boolean //availabilty of network connection
+abstract class NetworkBoundResource<ResponseObject, CacheObject, ViewStateType>(
+    isNetworkAvailable: Boolean, //availabilty of network connection
+    isNetworkRequest : Boolean,
+    shouldLoadFromCache : Boolean
 ) {
 
     private val TAG: String = "AppDebug"
@@ -34,37 +38,60 @@ abstract class NetworkBoundResource<ResponseObject, ViewStateType>(
 
     init{
         setJob(initNewJob())
-        setValue(DataState.loading(isLoading = true , cachedData = null))
 
-        if(isNetworkAvailable){
-            coroutineScope.launch {
 
-                //Testing delay
-                delay(TESTING_NETWORK_DELAY)
-                withContext(Main){
-                    //Make network call
-                    val apiResponse = createCall()
-                    result.addSource(apiResponse){response ->
-                        result.removeSource(apiResponse)
-                        coroutineScope.launch {
-                            handleNetworkCall(response)
+        if(shouldLoadFromCache){
+            val dbSource = loadFromCache()
+            result.addSource(dbSource){
+                result.removeSource(dbSource)
+                setValue(DataState.loading(isLoading = true , cachedData = it))
+            }
+        }else{
+            setValue(DataState.loading(isLoading = true , cachedData = null))
+        }
+
+        if(isNetworkRequest){
+            if(isNetworkAvailable){
+                coroutineScope.launch {
+
+                    //Testing delay
+                    delay(TESTING_NETWORK_DELAY)
+                    withContext(Main){
+                        //Make network call
+                        val apiResponse = createCall()
+                        result.addSource(apiResponse){response ->
+                            result.removeSource(apiResponse)
+                            coroutineScope.launch {
+                                handleNetworkCall(response)
+                            }
                         }
                     }
                 }
-            }
 
-            GlobalScope.launch(IO){
-                delay(NETWORK_TIMEOUT)
-                if(!job.isCompleted){
-                    Log.e(TAG , "NetworkBoundResource : JOB NETWORK TIMEOUT")
-                    job.cancel(CancellationException(UNABLE_TO_RESOLVE_HOST))
+                GlobalScope.launch(IO){
+                    delay(NETWORK_TIMEOUT)
+                    if(!job.isCompleted){
+                        Log.e(TAG , "NetworkBoundResource : JOB NETWORK TIMEOUT")
+                        job.cancel(CancellationException(UNABLE_TO_RESOLVE_HOST))
+                    }
                 }
+            }else{
+                onErrorReturn(UNABLE_TODO_OPERATION_WO_INTERNET, ResponseType.Dialog())
+
             }
         }else{
-            onErrorReturn(UNABLE_TODO_OPERATION_WITHOUT_INTERNET, ResponseType.Dialog())
+            coroutineScope.launch {
+                // Testing delay to test this scope operation
+                delay(TESTING_CACHE_DELAY)
 
+                //View data from cache only and return
+                createCacheRequestAndReturn()
+            }
         }
+
     }
+
+    abstract suspend fun createCacheRequestAndReturn()
 
     suspend fun handleNetworkCall(response: GenericApiResponse<ResponseObject>?) {
         when (response) {
@@ -138,6 +165,10 @@ abstract class NetworkBoundResource<ResponseObject, ViewStateType>(
     abstract suspend fun  handleApiSuccessResponse(response : GenericApiResponse.ApiSuccessResponse<ResponseObject>)
 
     abstract fun createCall() : LiveData<GenericApiResponse<ResponseObject>>
+
+    abstract fun loadFromCache() : LiveData<ViewStateType>
+
+    abstract suspend fun updateLocalDb(cacheObject : CacheObject?)
 
     abstract fun setJob(job : Job)
 

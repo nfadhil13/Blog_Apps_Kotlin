@@ -33,18 +33,18 @@ constructor(
         get() = _cachedToken
 
     fun login(newValue : AuthToken){
+        Log.d(TAG , "SessionManager : Login")
         setValue(newValue)
     }
 
     fun logout(){
-        Log.d(TAG, "Logout ..")
+        Log.d(TAG, "SessionManager : Logout ..")
 
         GlobalScope.launch(IO) {
             var errorMesaage : String? = null
             try{
-                cachedToken.value!!.account_pk?.let{
-                    authTokenDao.nullifyToken(it)
-                }
+                _cachedToken.value!!.account_pk?.let { authTokenDao.nullifyToken(it)
+                } ?: throw CancellationException("Token Error. Logging out user.")
             }catch (e : CancellationException){
                 Log.e(TAG , "logout cancellation : ${e.message}")
                 errorMesaage = e.message
@@ -66,6 +66,7 @@ constructor(
         //Global scope to make sure it set the value from the main thread
         GlobalScope.launch(Main) {
             if(_cachedToken.value !=newValue){
+                Log.d(TAG , "SessionManager : SetValue from ${_cachedToken.value} to $newValue")
                 _cachedToken.value = newValue
             }
         }
