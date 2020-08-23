@@ -10,7 +10,7 @@ import com.codingwithmitch.openapi.databinding.FragmentUpdateBlogBinding
 
 class UpdateBlogFragment : BaseBlogFragment(){
 
-    private var binding : FragmentUpdateBlogBinding? =null
+    private lateinit var binding : FragmentUpdateBlogBinding
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -18,7 +18,8 @@ class UpdateBlogFragment : BaseBlogFragment(){
     ): View? {
         // Inflate the layout for this fragment
         binding = DataBindingUtil.inflate(inflater,R.layout.fragment_update_blog,container,false)
-        return binding?.root
+        binding.lifecycleOwner
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -27,6 +28,5 @@ class UpdateBlogFragment : BaseBlogFragment(){
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding = null
     }
 }

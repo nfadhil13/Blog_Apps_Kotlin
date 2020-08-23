@@ -1,12 +1,12 @@
 package com.codingwithmitch.openapi.ui.auth
 
-import androidx.databinding.Observable
+import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
-import com.codingwithmitch.openapi.api.auth.network_responses.LoginResponse
+import androidx.lifecycle.liveData
 import com.codingwithmitch.openapi.models.AuthToken
 import com.codingwithmitch.openapi.repository.auth.AuthRepository
 import com.codingwithmitch.openapi.ui.BaseViewModel
+import com.codingwithmitch.openapi.ui.Data
 import com.codingwithmitch.openapi.ui.DataState
 import com.codingwithmitch.openapi.ui.auth.state.AuthStateEvent
 import com.codingwithmitch.openapi.ui.auth.state.AuthStateEvent.*
@@ -14,7 +14,6 @@ import com.codingwithmitch.openapi.ui.auth.state.AuthViewState
 import com.codingwithmitch.openapi.ui.auth.state.LogInFields
 import com.codingwithmitch.openapi.ui.auth.state.RegistrationFields
 import com.codingwithmitch.openapi.util.AbsenLiveData
-import com.codingwithmitch.openapi.util.GenericApiResponse
 import javax.inject.Inject
 
 
@@ -49,7 +48,14 @@ constructor(
             }
 
             is CheckPrevioustAuthEvent -> {
+                Log.i(TAG,"AuthViewModel : EventHandle : Checking Previous AuthUser")
                 return authRepository.checkPreviousAuthUser()
+            }
+
+            is None -> {
+                return liveData<DataState<AuthViewState>> {
+                    emit(DataState.data(null,null))
+                }
             }
         }
     }
@@ -77,13 +83,18 @@ constructor(
         update.authToken = authToken
         _viewState.value = update
     }
-    fun cancelActiveJob(){
-        authRepository.cancleActiveJobs()
+    fun cancelActiveJobs(){
+        handlePendingData()
+        authRepository.cancelAllJobs()
+    }
+
+    fun handlePendingData(){
+        setStateEvent(None())
     }
 
     override fun onCleared() {
         super.onCleared()
-        cancelActiveJob()
+        cancelActiveJobs()
     }
 
 

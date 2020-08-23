@@ -1,8 +1,12 @@
 package com.codingwithmitch.openapi.dependcy_injection.main
 
+import androidx.room.Database
 import com.codingwithmitch.openapi.api.main.OpenApiMainService
 import com.codingwithmitch.openapi.persistence.AccountPropertiesDao
+import com.codingwithmitch.openapi.persistence.AppDatabase
+import com.codingwithmitch.openapi.persistence.BlogPostDao
 import com.codingwithmitch.openapi.repository.main.AccountRepository
+import com.codingwithmitch.openapi.repository.main.BlogRepository
 import com.codingwithmitch.openapi.session.SessionManager
 import dagger.Module
 import dagger.Provides
@@ -31,6 +35,22 @@ class MainModule {
             sessionManager = sessionManager,
             accountPropertiesDao = accountPropertiesDao
         )
+    }
+
+    @MainScope
+    @Provides
+    fun provideBlogPostRepository(db : AppDatabase) : BlogPostDao{
+        return db.getBlogPostDao()
+    }
+
+    @MainScope
+    @Provides
+    fun provideBlogRepository(
+        openApiMainService: OpenApiMainService,
+        blogPostDao: BlogPostDao,
+        sessionManager: SessionManager
+    ):BlogRepository{
+        return BlogRepository(openApiMainService,blogPostDao,sessionManager)
     }
 
 }

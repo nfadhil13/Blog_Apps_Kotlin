@@ -12,6 +12,7 @@ import com.codingwithmitch.openapi.models.AccountProperties
 import com.codingwithmitch.openapi.models.AuthToken
 import com.codingwithmitch.openapi.persistence.AccountPropertiesDao
 import com.codingwithmitch.openapi.persistence.AuthTokenDao
+import com.codingwithmitch.openapi.repository.JobManager
 import com.codingwithmitch.openapi.repository.NetworkBoundResource
 import com.codingwithmitch.openapi.session.SessionManager
 import com.codingwithmitch.openapi.ui.Data
@@ -40,19 +41,21 @@ constructor(
     val sessionManager: SessionManager,
     val sharedPreferences: SharedPreferences,
     val sharefPreferencesEditor: SharedPreferences.Editor
-) {
+) : JobManager("AuthRepository") {
 
     private val TAG: String = "AppDebug"
 
-    private var repojob: Job? = null
 
     fun attemptLogin(email: String, password: String): LiveData<DataState<AuthViewState>> {
         val logInFieldsError = LogInFields(email, password).isValidLogIn()
         if (!logInFieldsError.equals(LogInFields.LoginError.none())) {
             return returnErrorResponse(logInFieldsError, ResponseType.Dialog())
         }
-        return object : NetworkBoundResource<LoginResponse,Any , AuthViewState>(
-            sessionManager.isConnectedToTheInternet(), true , false
+        return object : NetworkBoundResource<LoginResponse, Any, AuthViewState>(
+            sessionManager.isConnectedToTheInternet(),
+            true,
+            true,
+            false
         ) {
             override suspend fun handleApiSuccessResponse(response: ApiSuccessResponse<LoginResponse>) {
                 Log.d(TAG, "AuthRepository : LoginAttemp : HandleApiSuccess")
@@ -106,8 +109,7 @@ constructor(
             }
 
             override fun setJob(job: Job) {
-                repojob?.cancel()
-                repojob = job
+                addJob("attemptLogin",job)
             }
 
             override suspend fun createCacheRequestAndReturn() {
@@ -152,8 +154,11 @@ constructor(
 
         //if valid
         return object :
-            NetworkBoundResource<RegistrationResponse,Any, AuthViewState>
-                (sessionManager.isConnectedToTheInternet(), true , false) {
+            NetworkBoundResource<RegistrationResponse, Any, AuthViewState>
+                (sessionManager.isConnectedToTheInternet(),
+                true,
+                true,
+                false) {
             override suspend fun handleApiSuccessResponse(response: ApiSuccessResponse<RegistrationResponse>) {
                 Log.d(TAG, "handleApiSuccessResponce : Registration Sucess Response : $response")
 
@@ -204,8 +209,7 @@ constructor(
             }
 
             override fun setJob(job: Job) {
-                repojob?.cancel()
-                repojob = job
+             addJob("attemptRegister",job)
             }
 
 
@@ -231,6 +235,8 @@ constructor(
         val previousEmail: String? =
             sharedPreferences.getString(PreferenceKeys.PREVIOUS_AUTH_USER, null)
 
+        Log.d(TAG, "AuthRepository : checkPreviousAuthUser")
+
         if (previousEmail.isNullOrBlank()) {
             Log.d(
                 TAG,
@@ -239,15 +245,22 @@ constructor(
             return returnNoTokeFound()
         }
 
-        return object : NetworkBoundResource<Void, Any ,AuthViewState>
-            (sessionManager.isConnectedToTheInternet(), false , false) {
+        return object : NetworkBoundResource<Void, Any, AuthViewState>
+            (sessionManager.isConnectedToTheInternet(),
+            false,
+            false,
+            false) {
 
             override suspend fun createCacheRequestAndReturn() {
+                Log.d(TAG,"AuthRepository : Checking Auth Token for email $previousEmail")
                 accountPropertiesDao.searchByEmail(previousEmail).let { accountProperties ->
                     accountProperties?.let {
+                        Log.d(TAG, "AuthRepository : CheckPreviousAuthUser : AccountProperties Not Null")
                         if (accountProperties.pk > -1) {
+                            Log.d(TAG,"AuthRepository : CheckPreviousAuthUser : PK > -1")
                             authTokenDao.searchByPk(accountProperties.pk).let { authToken ->
                                 if (authToken != null) {
+                                    Log.d(TAG, "AuthRepository :CheckPrevious AuthUser : AuthToken found $authToken")
                                     onCompleteJob(
                                         DataState.data(
                                             data = AuthViewState(
@@ -261,7 +274,7 @@ constructor(
 
                             }
                         }
-                        Log.d(TAG, "AuthRepository :CheckPrevious AuthUser : AuthToken not found")
+                        Log.d(TAG, "AuthRepository :CheckPrevious AuthUser : pk < -1")
                         onCompleteJob(
                             DataState.data(
                                 null,
@@ -272,7 +285,17 @@ constructor(
                             )
                         )
 
-                    }
+                    } ?:
+                    Log.d(TAG, "AuthRepository :CheckPrevious AuthUser : pk < -1")
+                    onCompleteJob(
+                        DataState.data(
+                            null,
+                            Response(
+                                RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE,
+                                ResponseType.None()
+                            )
+                        )
+                    )
                 }
             }
 
@@ -285,38 +308,30 @@ constructor(
             }
 
             override fun setJob(job: Job) {
-                repojob?.cancel()
-                repojob = job
+                addJob("checkPreviousAuthUser",job)
             }
 
             override fun loadFromCache(): LiveData<AuthViewState> {
-               return AbsenLiveData.create()
+                return AbsenLiveData.create()
             }
 
             override suspend fun updateLocalDb(cacheObject: Any?) {
-               //Not used in this case
+                //Not used in this case
             }
 
         }.asLiveData()
     }
 
     private fun returnNoTokeFound(): LiveData<DataState<AuthViewState>> {
-        return liveData {
+        Log.d(TAG , "AuthRepository No TokenFound")
+        return liveData<DataState<AuthViewState>>  {
             emit(
-                DataState.data(
-                    response = Response(
-                        SuccessHandler.RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE,
-                        ResponseType.None()
-                    )
-                )
+                DataState.data(null, Response(RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE, ResponseType.None()))
             )
         }
     }
 
-    fun cancleActiveJobs() {
-        Log.d("TAG", "AuthRepository : Cancelling on-going jobs...")
-        repojob?.cancel()
-    }
+
 
     private fun returnErrorResponse(errorMessage: String, dialog: ResponseType.Dialog)
             : LiveData<DataState<AuthViewState>> {

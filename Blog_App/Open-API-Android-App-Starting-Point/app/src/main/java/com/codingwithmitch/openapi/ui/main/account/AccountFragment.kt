@@ -10,13 +10,14 @@ import com.codingwithmitch.openapi.R
 import com.codingwithmitch.openapi.databinding.FragmentAccountBinding
 import com.codingwithmitch.openapi.models.AccountProperties
 import com.codingwithmitch.openapi.session.SessionManager
+import com.codingwithmitch.openapi.ui.DataState
 import com.codingwithmitch.openapi.ui.main.account.state.AccountStateEvent
 import kotlinx.android.synthetic.main.fragment_account.*
 import javax.inject.Inject
 
 class AccountFragment : BaseAccountFragment() {
 
-    private var binding: FragmentAccountBinding? =null
+    private lateinit var binding: FragmentAccountBinding
 
 
     override fun onCreateView(
@@ -25,8 +26,8 @@ class AccountFragment : BaseAccountFragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_account, container, false)
-        subscribeObservers()
-        return binding?.root ?: throw Exception("Error Binding")
+        binding.lifecycleOwner = viewLifecycleOwner
+        return binding.root
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -48,12 +49,13 @@ class AccountFragment : BaseAccountFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding = null
+        //binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setHasOptionsMenu(true)
+        subscribeObservers()
         binding?.apply {
             changePassword.setOnClickListener {
                 findNavController().navigate(R.id.action_accountFragment_to_changePasswordFragment)
@@ -73,15 +75,19 @@ class AccountFragment : BaseAccountFragment() {
 
     }
 
-    private fun subscribeObservers(){
-        viewModel.dataState.observe(this, Observer { dataState ->
+    private fun subscribeObservers() {
+        viewModel.dataState.observe(viewLifecycleOwner, Observer { dataState ->
+            Log.e(TAG , "Status loading ${dataState.loading.isLoading}")
             stateChangeListener.onDataStateChange(dataState)
-            dataState?.let{
-                it.data?.let{data->
-                    data.data?.let{event->
-                        event.getContentIfNotHandled()?.let{viewState->
-                            viewState.accountProperties?.let{accountProperties ->
-                                Log.d(TAG, "AccountFragment : Datastate changing $it")
+            dataState?.let { viewState ->
+                viewState.data?.let { data ->
+                    data.data?.let { event ->
+                        event.getContentIfNotHandled()?.let { viewState ->
+                            viewState.accountProperties?.let { accountProperties ->
+                                Log.d(
+                                    TAG,
+                                    "AccountFragment : Datastate changing $accountProperties"
+                                )
                                 viewModel.setAccountPropertiesData(accountProperties)
                             }
                         }
@@ -89,9 +95,16 @@ class AccountFragment : BaseAccountFragment() {
                 }
             }
         })
+
+        viewModel.viewState.observe(viewLifecycleOwner, Observer {viewState->
+            viewState.accountProperties?.let{
+                setAccountDataFields(it)
+            }
+        })
     }
-    private fun setAccountDataFields(accountProperties: AccountProperties){
-        binding?.apply {
+
+    private fun setAccountDataFields(accountProperties: AccountProperties) {
+        binding.apply {
             this.email.setText(accountProperties.email)
             this.username.setText(accountProperties.username)
         }

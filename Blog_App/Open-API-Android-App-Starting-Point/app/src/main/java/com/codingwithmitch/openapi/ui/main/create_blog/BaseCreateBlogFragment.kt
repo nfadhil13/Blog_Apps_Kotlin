@@ -19,4 +19,8 @@ abstract class BaseCreateBlogFragment : DaggerFragment(){
             Log.e(TAG, "$context must implement DataStateChangeListener" )
         }
     }
+
+    fun cancelActiveJobs() {
+
+    }
 }

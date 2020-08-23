@@ -21,6 +21,7 @@ class CreateBlogFragment : BaseCreateBlogFragment() {
         // Inflate the layout for this fragment
         binding = DataBindingUtil
             .inflate(inflater, R.layout.fragment_create_blog, container, false)
+        binding?.lifecycleOwner = viewLifecycleOwner
         return binding?.root
     }
 
@@ -31,6 +32,6 @@ class CreateBlogFragment : BaseCreateBlogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        binding = null
+        //binding = null
     }
 }

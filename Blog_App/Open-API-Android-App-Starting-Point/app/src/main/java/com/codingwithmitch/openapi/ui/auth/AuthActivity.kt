@@ -37,9 +37,13 @@ class AuthActivity : BaseActivity() {
 
         viewModel = ViewModelProvider(this, viewModolProviderFactory).get(AuthViewModel::class.java)
         subscribeObservers()
-        checkPreviousAuthUser()
+
     }
 
+    override fun onResume() {
+        super.onResume()
+        checkPreviousAuthUser()
+    }
 
     fun checkPreviousAuthUser() {
         viewModel.setStateEvent(AuthStateEvent.CheckPrevioustAuthEvent())
@@ -49,7 +53,8 @@ class AuthActivity : BaseActivity() {
         viewModel.dataState.observe(this, Observer { dataState ->
 
 
-            Log.i(TAG, "AuthActivity response id ${dataState.data == null}")
+            Log.i(TAG, "AuthActivity dataState $dataState")
+
             onDataStateChange(dataState)
             dataState.data?.let { data ->
                 //Checking if the data is not nul then do something

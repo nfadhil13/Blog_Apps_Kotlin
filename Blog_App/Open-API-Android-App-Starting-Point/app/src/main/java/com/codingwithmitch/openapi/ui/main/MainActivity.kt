@@ -17,10 +17,13 @@ import com.codingwithmitch.openapi.ui.Event
 import com.codingwithmitch.openapi.ui.Response
 import com.codingwithmitch.openapi.ui.ToolbarEvent
 import com.codingwithmitch.openapi.ui.auth.AuthActivity
+import com.codingwithmitch.openapi.ui.main.account.BaseAccountFragment
 import com.codingwithmitch.openapi.ui.main.account.ChangePasswordFragment
 import com.codingwithmitch.openapi.ui.main.account.UpdateAccountFragment
+import com.codingwithmitch.openapi.ui.main.blog.BaseBlogFragment
 import com.codingwithmitch.openapi.ui.main.blog.UpdateBlogFragment
 import com.codingwithmitch.openapi.ui.main.blog.ViewBlogFragment
+import com.codingwithmitch.openapi.ui.main.create_blog.BaseCreateBlogFragment
 import com.codingwithmitch.openapi.util.BottomNavController
 import com.codingwithmitch.openapi.util.BottomNavController.*
 import com.codingwithmitch.openapi.util.setUpNavigation
@@ -122,7 +125,26 @@ class MainActivity : BaseActivity(),
     }
 
     override fun onGraphChanged() {
+        cancelActiveJobs()
         expandAppBar()
+    }
+
+    private fun cancelActiveJobs() {
+        val fragments = bottomNavController.fragmentManager
+            .findFragmentById(bottomNavController.containerId)
+            ?.childFragmentManager
+            ?.fragments
+        fragments?.let {it->
+            it.forEach{fragment ->
+                when(fragment){
+                    is BaseAccountFragment -> fragment.cancelActiveJobs()
+                    is BaseBlogFragment -> fragment.cancelActiveJobs()
+                    is BaseCreateBlogFragment -> fragment.cancelActiveJobs()
+                }
+            }
+
+        }
+        displayProgressBar(false)
     }
 
     override fun onReselectNavItem(navController: NavController, fragment: Fragment) =

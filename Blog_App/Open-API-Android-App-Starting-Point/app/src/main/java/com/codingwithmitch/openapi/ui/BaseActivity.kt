@@ -1,6 +1,8 @@
 package com.codingwithmitch.openapi.ui
 
+import android.content.Context
 import android.util.Log
+import android.view.inputmethod.InputMethodManager
 import com.codingwithmitch.openapi.session.SessionManager
 import dagger.android.support.DaggerAppCompatActivity
 import kotlinx.coroutines.Dispatchers.Main
@@ -16,16 +18,17 @@ abstract class BaseActivity : DaggerAppCompatActivity(), DataStateChangeListener
     lateinit var sessionManager: SessionManager
 
     override fun onDataStateChange(dataState: DataState<*>?) {
-        dataState?.let{dataState->
+        dataState?.let{it->
             GlobalScope.launch(Main){
-                displayProgressBar(dataState.loading.isLoading)
+                Log.d(TAG,"START LOADING THE PROGRESS BAR : ${it.loading.isLoading}")
+                displayProgressBar(it.loading.isLoading)
 
-                dataState.error?.let{errorEvent->
+                it.error?.let{errorEvent->
                     handleStateError(errorEvent)
                 }
 
-                dataState.data?.let {data->
-                    data?.response.let {response->
+                it.data?.let {data->
+                    data.response?.let {response->
                         handleStateResponse(response)
                     }
                 }
@@ -34,7 +37,23 @@ abstract class BaseActivity : DaggerAppCompatActivity(), DataStateChangeListener
     }
 
     private fun handleStateResponse(response: Event<Response>?){
-        
+        response?.getContentIfNotHandled()?.let {it->
+            when(it.responseType){
+                is ResponseType.Dialog ->{
+                    it.message?.let{ errorMessage ->
+                        displayErrorDialog(errorMessage)
+                    }
+                }
+                is ResponseType.Toast->{
+                    it.message?.let{errorMessage ->
+                        displayShortToast(errorMessage)
+                    }
+                }
+                is ResponseType.None->{
+                    Log.e(TAG,"handleStateResponse: None Response Type ${it.message}")
+                }
+            }
+        }
     }
 
     private fun handleStateError(errorEvent: Event<StateError>) {
@@ -54,6 +73,15 @@ abstract class BaseActivity : DaggerAppCompatActivity(), DataStateChangeListener
                     Log.e(TAG,"handleStateError : None Response Type ${errorState.response.message}")
                 }
             }
+        }
+    }
+
+    override fun hideSoftKeyboard() {
+        currentFocus?.let{
+            val inputMethodManager = getSystemService(
+                Context.INPUT_METHOD_SERVICE
+            ) as InputMethodManager
+            inputMethodManager.hideSoftInputFromWindow(currentFocus!!.windowToken,0)
         }
     }
 

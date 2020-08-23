@@ -3,7 +3,6 @@ package com.codingwithmitch.openapi.ui.auth
 import android.os.Bundle
 import android.view.View
 import androidx.lifecycle.ViewModelProvider
-import com.codingwithmitch.openapi.dependcy_injection.ViewModelFactoryModule
 import com.codingwithmitch.openapi.viewmodels.ViewModelProviderFactory
 import dagger.android.support.DaggerFragment
 import java.lang.Exception
@@ -23,6 +22,10 @@ abstract class BaseAuthFragment : DaggerFragment() {
         viewModel = activity?.run{
             ViewModelProvider(this,viewModolProviderFactory).get(AuthViewModel::class.java)
         }?:throw Exception("Invalid Activity")
+        cancleActiveJobs()
     }
 
+    private fun cancleActiveJobs(){
+        viewModel.cancelActiveJobs()
+    }
 }

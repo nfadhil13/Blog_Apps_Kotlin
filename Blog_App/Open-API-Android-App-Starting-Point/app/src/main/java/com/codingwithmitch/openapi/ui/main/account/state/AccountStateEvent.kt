@@ -14,4 +14,6 @@ sealed class AccountStateEvent {
         val email : String,
         val username : String
     ) : AccountStateEvent()
+
+    class None : AccountStateEvent()
 }
