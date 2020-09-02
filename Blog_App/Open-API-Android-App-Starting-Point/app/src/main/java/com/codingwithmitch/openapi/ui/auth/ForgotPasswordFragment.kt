@@ -1,172 +1,142 @@
 package com.codingwithmitch.openapi.ui.auth
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.Context
 import android.os.Bundle
 import android.util.Log
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.animation.TranslateAnimation
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+
 import com.codingwithmitch.openapi.R
-import com.codingwithmitch.openapi.databinding.FragmentForgotPasswordBinding
-import com.codingwithmitch.openapi.ui.DataState
-import com.codingwithmitch.openapi.ui.DataStateChangeListener
-import com.codingwithmitch.openapi.ui.Response
-import com.codingwithmitch.openapi.ui.ResponseType
-import com.codingwithmitch.openapi.ui.auth.ForgotPasswordFragment.WebAppInterface.OnWebInteractionCallBack
-import com.codingwithmitch.openapi.util.Constants
+import com.codingwithmitch.openapi.dependcy_injection.auth.AuthScope
+import com.codingwithmitch.openapi.ui.auth.ForgotPasswordFragment.WebAppInterface.*
+import com.codingwithmitch.openapi.util.*
 import kotlinx.android.synthetic.main.fragment_forgot_password.*
-import kotlinx.android.synthetic.main.fragment_launcher.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.Main
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
-import java.lang.ClassCastException
+import javax.inject.Inject
 
-class ForgotPasswordFragment : BaseAuthFragment() {
+@FlowPreview
+@ExperimentalCoroutinesApi
+@AuthScope
+class ForgotPasswordFragment
+@Inject
+constructor(
+    viewModelFactory: ViewModelProvider.Factory
+): BaseAuthFragment(R.layout.fragment_forgot_password, viewModelFactory) {
 
-    private var  binding : FragmentForgotPasswordBinding? = null
+    lateinit var webView: WebView
 
-    lateinit var stateChangeListener : DataStateChangeListener
+    val webInteractionCallback = object: OnWebInteractionCallback {
 
+        override fun onError(errorMessage: String) {
+            Log.e(TAG, "onError: $errorMessage")
+            uiCommunicationListener.onResponseReceived(
+                response = Response(
+                    message = errorMessage,
+                    uiComponentType = UIComponentType.Dialog(),
+                    messageType = MessageType.Error()
+                ),
+                stateMessageCallback = object: StateMessageCallback{
+                    override fun removeMessageFromStack() {
+                        viewModel.clearStateMessage()
+                    }
+                }
+            )
+        }
 
-    val webInteractionCallback: OnWebInteractionCallBack = object : OnWebInteractionCallBack{
         override fun onSuccess(email: String) {
-            Log.d(TAG,"ForgotPasswordFragment : Reset Link will be sent to $email")
+            Log.d(TAG, "onSuccess: a reset link will be sent to $email.")
             onPasswordResetLinkSent()
         }
 
-        override fun onError(errorMessage: String) {
-           Log.d(TAG,"ForgotPasswordFragment : On Error : $errorMessage")
-
-            val dataState = DataState.error<Any>(
-                response = Response(errorMessage,ResponseType.Dialog())
-            )
-
-            stateChangeListener.onDataStateChange(
-                dataState = dataState
-            )
-        }
-
         override fun onLoading(isLoading: Boolean) {
-            Log.d(TAG , "ForgotPasswordFragment : OnLoading")
-            GlobalScope.launch(Main){
-                DataState.loading(isLoading = isLoading,cachedData = null)
-            }
-
+            Log.d(TAG, "onLoading... ")
+            uiCommunicationListener.displayProgressBar(isLoading)
         }
-
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        binding = null
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflate the layout for this fragment
-        binding = DataBindingUtil.inflate(inflater,R.layout.fragment_forgot_password, container, false)
-        return binding?.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        webView = view.findViewById(R.id.webview)
+
         loadPasswordResetWebView()
-        binding!!.returnToLauncherFragment.setOnClickListener {
+
+        return_to_launcher_fragment.setOnClickListener {
             findNavController().popBackStack()
         }
     }
 
     @SuppressLint("SetJavaScriptEnabled")
     fun loadPasswordResetWebView(){
-        stateChangeListener.onDataStateChange(
-            DataState.loading(isLoading = true , cachedData = null)
-        )
-
-        binding!!.webview.webViewClient = object : WebViewClient(){
+        uiCommunicationListener.displayProgressBar(true)
+        webView.webViewClient = object: WebViewClient(){
             override fun onPageFinished(view: WebView?, url: String?) {
-                stateChangeListener.onDataStateChange(
-                    DataState.loading(isLoading = false , cachedData = null)
-                )
+                super.onPageFinished(view, url)
+                uiCommunicationListener.displayProgressBar(false)
             }
         }
-
-        binding!!.webview.loadUrl(Constants.PASSWORD_RESET_URL)
-        binding!!.webview.settings.javaScriptEnabled=true
-        binding!!.webview.addJavascriptInterface(WebAppInterface(webInteractionCallback),"AndroidTextListener")
-
-    }
-    private fun onPasswordResetLinkSent() {
-        GlobalScope.launch(Main) {
-            binding!!.apply {
-                parentView.removeView(webview)
-                webview.destroy()
-
-                val animation = TranslateAnimation(
-                    passwordResetDoneContainer.width.toFloat(),
-                    0f,
-                    0f,
-                    0f
-                )
-                passwordResetDoneContainer.startAnimation(animation)
-                passwordResetDoneContainer.visibility = View.VISIBLE
-            }
-        }
+        webView.loadUrl(Constants.PASSWORD_RESET_URL)
+        webView.settings.javaScriptEnabled = true
+        webView.addJavascriptInterface(WebAppInterface(webInteractionCallback), "AndroidTextListener")
     }
 
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        try{
-            stateChangeListener = context as DataStateChangeListener
-        }catch (e : ClassCastException){
-            Log.e(TAG,"$context must implemet DataStateChangeListener")
-        }
-    }
+
     class WebAppInterface
     constructor(
-        private val callback : OnWebInteractionCallBack
-    ){
-        private val TAG = "AppDebug"
+        private val callback: OnWebInteractionCallback
+    ) {
+
+        private val TAG: String = "AppDebug"
 
         @JavascriptInterface
-        fun onSuccess(email:String){
+        fun onSuccess(email: String) {
             callback.onSuccess(email)
         }
 
         @JavascriptInterface
-        fun onError(message:String){
-            callback.onError(message)
+        fun onError(errorMessage: String) {
+            callback.onError(errorMessage)
         }
+
         @JavascriptInterface
-        fun onLoading(isLoading: Boolean){
+        fun onLoading(isLoading: Boolean) {
             callback.onLoading(isLoading)
         }
 
-        interface OnWebInteractionCallBack {
-            fun onSuccess(email : String)
-            fun onError(errorMessage : String)
-            fun onLoading(isLoading : Boolean)
-        }
+        interface OnWebInteractionCallback{
 
+            fun onSuccess(email: String)
+
+            fun onError(errorMessage: String)
+
+            fun onLoading(isLoading: Boolean)
+        }
     }
 
+    fun onPasswordResetLinkSent(){
+        CoroutineScope(Main).launch{
+            parent_view.removeView(webView)
+            webView.destroy()
 
-
-
-
-
+            val animation = TranslateAnimation(
+                password_reset_done_container.width.toFloat(),
+                0f,
+                0f,
+                0f
+            )
+            animation.duration = 500
+            password_reset_done_container.startAnimation(animation)
+            password_reset_done_container.visibility = View.VISIBLE
+        }
+    }
 
 }
-
-

@@ -2,10 +2,13 @@ package com.codingwithmitch.openapi.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.codingwithmitch.openapi.dependcy_injection.auth.AuthScope
+import com.codingwithmitch.openapi.dependcy_injection.main.MainScope
 import javax.inject.Inject
 import javax.inject.Provider
 
-class ViewModelProviderFactory
+@MainScope
+class MainViewModelFactory
 @Inject
 constructor(
     private val creators: Map<Class<out ViewModel>, @JvmSuppressWildcards Provider<ViewModel>>

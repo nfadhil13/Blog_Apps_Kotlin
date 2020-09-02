@@ -2,23 +2,24 @@ package com.codingwithmitch.openapi.dependcy_injection
 
 import android.app.Application
 import com.codingwithmitch.openapi.BaseApplication
+import com.codingwithmitch.openapi.dependcy_injection.auth.AuthComponent
+import com.codingwithmitch.openapi.dependcy_injection.main.MainComponent
 import com.codingwithmitch.openapi.session.SessionManager
+import com.codingwithmitch.openapi.ui.BaseActivity
 import dagger.BindsInstance
 import dagger.Component
-import dagger.android.AndroidInjectionModule
-import dagger.android.AndroidInjector
 import javax.inject.Singleton
 
 @Singleton
 @Component(
     modules = [
-        AndroidInjectionModule::class,
         AppModule::class,
-        ActivityBuildersModule::class,
-        ViewModelFactoryModule::class
+        SubComponentModule::class
     ]
 )
-interface AppComponent : AndroidInjector<BaseApplication> {
+interface AppComponent{
+
+
     val sessionManager : SessionManager
 
     @Component.Builder
@@ -27,4 +28,10 @@ interface AppComponent : AndroidInjector<BaseApplication> {
         fun application(application: Application) : Builder
         fun build() : AppComponent
     }
+
+    fun inject(baseActivity: BaseActivity)
+
+    fun authComponent() : AuthComponent.Factory
+
+    fun mainComponent() : MainComponent.Factory
 }

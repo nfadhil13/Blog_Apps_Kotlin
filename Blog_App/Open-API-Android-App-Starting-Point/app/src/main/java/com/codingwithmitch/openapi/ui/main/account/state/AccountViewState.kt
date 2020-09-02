@@ -1,14 +1,20 @@
 package com.codingwithmitch.openapi.ui.main.account.state
 
+import android.os.Parcelable
 import android.util.Log
 import com.codingwithmitch.openapi.models.AccountProperties
 import com.codingwithmitch.openapi.ui.auth.state.RegistrationFields
+import kotlinx.android.parcel.Parcelize
 
+
+const val ACCOUNT_VIEW_STATE_BUNDLE_KEY = "com.codingwithmitch.openapi.ui.main.account.state.ViewState"
+
+@Parcelize
 data class AccountViewState(
     var accountProperties: AccountProperties? = null,
     var changePasswordFields: ChangePasswordFields? = ChangePasswordFields()
 
-){
+) : Parcelable {
     class UpdateError{
         companion object{
             fun mustFillAllFields() : String{
@@ -48,11 +54,12 @@ data class AccountViewState(
     }
 }
 
+@Parcelize
 data class ChangePasswordFields(
     var oldPassword : String? = null ,
     var newPassword : String? = null ,
     var newPasswordConfirm : String? =null
-){
+) : Parcelable {
     class ChangePasswordError{
         companion object{
             fun mustFillAllFields() : String{

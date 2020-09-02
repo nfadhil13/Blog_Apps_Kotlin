@@ -1,19 +1,53 @@
 package com.codingwithmitch.openapi.ui.main.account.state
 
-sealed class AccountStateEvent {
+import com.codingwithmitch.openapi.util.StateEvent
 
-    class GetAccountPropertiesEvent : AccountStateEvent()
+sealed class AccountStateEvent : StateEvent{
+
+    class GetAccountPropertiesEvent : AccountStateEvent() {
+        override fun errorInfo(): String {
+            return "Error getting Account info"
+        }
+
+        override fun toString(): String {
+            return "GetAccountPropertiesEvent"
+        }
+    }
 
     data class ChangePasswordEvent(
         val oldPassword : String,
         val newPassword : String,
         val newPasswordConfirm : String
-    ) : AccountStateEvent()
+    ) : AccountStateEvent() {
+        override fun errorInfo(): String {
+            return "Error changing the password"
+        }
+
+        override fun toString(): String {
+            return "ChangePasswordEvent"
+        }
+    }
 
     data class UpdateAccountPropertiesEvent(
         val email : String,
         val username : String
-    ) : AccountStateEvent()
+    ) : AccountStateEvent() {
+        override fun errorInfo(): String {
+            return "Error Updating last Account"
+        }
 
-    class None : AccountStateEvent()
+        override fun toString(): String {
+            return "UpdateAccountPropertiesEvent"
+        }
+    }
+
+    class None : AccountStateEvent() {
+        override fun errorInfo(): String {
+            return "None"
+        }
+
+        override fun toString(): String {
+            return "None"
+        }
+    }
 }

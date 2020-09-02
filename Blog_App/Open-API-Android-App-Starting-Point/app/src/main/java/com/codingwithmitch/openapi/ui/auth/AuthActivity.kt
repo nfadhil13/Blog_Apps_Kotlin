@@ -4,127 +4,154 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
-import androidx.databinding.DataBindingUtil
+import androidx.activity.viewModels
+import androidx.fragment.app.FragmentFactory
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import com.codingwithmitch.openapi.BaseApplication
 import com.codingwithmitch.openapi.R
 import com.codingwithmitch.openapi.databinding.ActivityAuthBinding
+import com.codingwithmitch.openapi.fragments.auth.AuthNavHostFragment
 import com.codingwithmitch.openapi.ui.BaseActivity
-import com.codingwithmitch.openapi.ui.Event
-import com.codingwithmitch.openapi.ui.Response
-import com.codingwithmitch.openapi.ui.ResponseType
 import com.codingwithmitch.openapi.ui.auth.state.AuthStateEvent
 import com.codingwithmitch.openapi.ui.main.MainActivity
-import com.codingwithmitch.openapi.util.SuccessHandler
+import com.codingwithmitch.openapi.util.StateMessageCallback
 import com.codingwithmitch.openapi.util.SuccessHandler.Companion.RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE
-import com.codingwithmitch.openapi.viewmodels.ViewModelProviderFactory
+import kotlinx.android.synthetic.main.activity_auth.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import javax.inject.Inject
 
-class AuthActivity : BaseActivity() {
-
-    private var binding: ActivityAuthBinding? =null
+@FlowPreview
+@ExperimentalCoroutinesApi
+class AuthActivity : BaseActivity()
+{
 
     @Inject
-    lateinit var viewModolProviderFactory: ViewModelProviderFactory
+    lateinit var fragmentFactory: FragmentFactory
 
-    lateinit var viewModel: AuthViewModel
+    @Inject
+    lateinit var providerFactory: ViewModelProvider.Factory
+
+    val viewModel: AuthViewModel by viewModels {
+        providerFactory
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d(TAG,"AuthActivity : OnCreate")
+        inject()
         super.onCreate(savedInstanceState)
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_auth)
-
-        viewModel = ViewModelProvider(this, viewModolProviderFactory).get(AuthViewModel::class.java)
+        setContentView(R.layout.activity_auth)
         subscribeObservers()
+        onRestoreInstanceState()
 
+    }
+
+    private fun onRestoreInstanceState(){
+        val host = supportFragmentManager.findFragmentById(R.id.auth_fragments_container)
+        host?.let {
+            // do nothing
+        } ?: createNavHost()
+    }
+
+    private fun createNavHost(){
+        val navHost = AuthNavHostFragment.create(
+            R.navigation.auth_nav_graph
+        )
+        supportFragmentManager.beginTransaction()
+            .replace(
+                R.id.auth_fragments_container,
+                navHost,
+                getString(R.string.AuthNavHost)
+            )
+            .setPrimaryNavigationFragment(navHost)
+            .commit()
     }
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG,"AuthActivity : OnResume")
         checkPreviousAuthUser()
     }
 
-    fun checkPreviousAuthUser() {
-        viewModel.setStateEvent(AuthStateEvent.CheckPrevioustAuthEvent())
-    }
+    private fun subscribeObservers(){
 
-    fun subscribeObservers() {
-        viewModel.dataState.observe(this, Observer { dataState ->
-
-
-            Log.i(TAG, "AuthActivity dataState $dataState")
-
-            onDataStateChange(dataState)
-            dataState.data?.let { data ->
-                //Checking if the data is not nul then do something
-                data.data?.let { event ->
-                    event.getContentIfNotHandled()?.let {
-                        it.authToken?.let {
-                            Log.i(TAG, "AuthActivity data exist , Loging in")
-                            viewModel.setAuthToken(it)
-                        }
-                    }
-                }
-                data.response?.let { event ->
-                    event.peekContent().let{response ->
-                        response.message?.let{message->
-                            if(message.equals(RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE)){
-                                onFinishCheckPreviousAuthUser()
-                            }
-                        }
-                    }
-                }
-            }
-
-
+        viewModel.viewState.observe(this, Observer{ viewState ->
+            Log.d(TAG, "AuthActivity, subscribeObservers: AuthViewState: ${viewState}")
+            viewState.authToken?.let{
+                sessionManager.login(it)
+            }?: Log.d(TAG,"AuthActivity : No Last LoginFound")
         })
 
-        viewModel.viewState.observe(this, Observer {
-            it.authToken?.let {authToken ->
-                Log.d(
-                    TAG,
-                    "AuthActivity : SubscriberObservers : ViewState LoggingIn with AuthToken : $it"
+        viewModel.numActiveJobs.observe(this, Observer { jobCounter ->
+            displayProgressBar(viewModel.areAnyJobsActive())
+        })
+
+        viewModel.stateMessage.observe(this, Observer { stateMessage ->
+            Log.d(TAG,"AuthActivity : NewMesssage $stateMessage")
+            stateMessage?.let {
+
+                if(stateMessage.response.message.equals(RESPONSE_CHECK_PREVIOUS_AUTH_USER_DONE)){
+                    onFinishCheckPreviousAuthUser()
+                }
+
+                onResponseReceived(
+                    response = it.response,
+                    stateMessageCallback = object: StateMessageCallback{
+                        override fun removeMessageFromStack() {
+                            viewModel.clearStateMessage()
+                        }
+                    }
                 )
-                authToken.token?.let{ sessionManager.login(authToken) }
-
             }
         })
 
-        sessionManager.cachedToken.observe(this, Observer { dataState ->
-            Log.d(TAG, "AuthActivity : SubscriberObservers : ChachedToken : DataState : $dataState")
-            dataState.let{authToken->
-                if (authToken != null && authToken.account_pk != -1 && authToken.token != null) {
-                    Log.d(TAG, "AuthActivity : SubscriberObservers : ChachedToken : Logging In $authToken")
+        sessionManager.cachedToken.observe(this, Observer{ dataState ->
+            Log.d(TAG, "AuthActivity, subscribeObservers: AuthDataState: ${dataState}")
+            dataState.let{ authToken ->
+                if(authToken != null && authToken.account_pk != -1 && authToken.token != null){
                     navMainActivity()
                 }
             }
         })
     }
 
-    private fun onFinishCheckPreviousAuthUser() {
-        binding?.let{
-            it.fragmentContainer.visibility = View.VISIBLE
-        }
+    private fun onFinishCheckPreviousAuthUser(){
+        Log.d(TAG,"Finish CheckPreviousAuthUser")
+        fragment_container.visibility = View.VISIBLE
+        splash_logo.visibility = View.INVISIBLE
     }
 
-    private fun navMainActivity() {
+    fun navMainActivity(){
         val intent = Intent(this, MainActivity::class.java)
         startActivity(intent)
         finish()
+        (application as BaseApplication).releaseAuthComponent()
     }
 
+    private fun checkPreviousAuthUser(){
+        viewModel.setStateEvent(AuthStateEvent.CheckPrevioustAuthEvent())
+        Log.d(TAG,"AuthActivity : CheckingPreviousAuth")
+    }
 
-    override fun displayProgressBar(showProgressBar: Boolean) {
-        binding?.let{nonNullBinding->
-            if (showProgressBar) {
-                nonNullBinding.progressBar.visibility = View.VISIBLE
-                Log.d(TAG, "AuthActivity : Showing ProgressBar")
-            } else {
-                nonNullBinding.progressBar.visibility = View.INVISIBLE
-                Log.d(TAG, "AuthActivity : Hiding ProgressBar")
-            }
+    override fun inject() {
+        (application as BaseApplication).authComponent()
+            .inject(this)
+    }
+
+    override fun displayProgressBar(isLoading: Boolean){
+        if(isLoading){
+            progress_bar.visibility = View.VISIBLE
         }
-
+        else{
+            progress_bar.visibility = View.GONE
+        }
     }
+
+    override fun expandAppBar() {
+        // ignore
+    }
+
+
+
 }

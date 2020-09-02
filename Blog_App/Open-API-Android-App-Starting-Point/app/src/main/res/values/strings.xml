@@ -70,6 +70,7 @@
     <string name="login_label">Login</string>
     <string name="register_label">Register</string>
     <string name="forgot_password_label">Forgot Password</string>
+    <string name="AuthNavHost">AuthNavHost</string>
 
 </resources>
 

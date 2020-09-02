@@ -5,43 +5,44 @@ import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import com.codingwithmitch.openapi.R
-import com.codingwithmitch.openapi.ui.DataStateChangeListener
-import com.codingwithmitch.openapi.viewmodels.ViewModelProviderFactory
-import dagger.android.support.DaggerFragment
-import java.lang.Exception
-import javax.inject.Inject
+import com.codingwithmitch.openapi.ui.UICommunicationListener
+import kotlinx.coroutines.*
 
-abstract class BaseAccountFragment : DaggerFragment(){
+@FlowPreview
+@ExperimentalCoroutinesApi
+abstract class BaseAccountFragment
+constructor(
+    @LayoutRes
+    private val layoutRes: Int,
+    private val viewModelFactory: ViewModelProvider.Factory
+): Fragment(layoutRes){
 
     val TAG: String = "AppDebug"
 
-    lateinit var stateChangeListener: DataStateChangeListener
+    val viewModel: AccountViewModel by viewModels{
+        viewModelFactory
+    }
 
-    @Inject
-    lateinit var viewModelProviderFactory: ViewModelProviderFactory
-
-    lateinit var viewModel : AccountViewModel
+    lateinit var uiCommunicationListener: UICommunicationListener
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setUpActionBarWithNavController(R.id.accountFragment , activity as AppCompatActivity)
-        viewModel = activity?.run{
-            ViewModelProvider(this,viewModelProviderFactory)
-                .get(AccountViewModel::class.java)
-        }?: throw Exception("Invalid Activity")
-
-        cancelActiveJobs()
+        setupActionBarWithNavController(R.id.accountFragment, activity as AppCompatActivity)
+        setupChannel()
     }
 
+    private fun setupChannel() = viewModel.setupChannel()
 
-
-    fun setUpActionBarWithNavController(fragmentId : Int , activity : AppCompatActivity){
+    fun setupActionBarWithNavController(fragmentId: Int, activity: AppCompatActivity){
         val appBarConfiguration = AppBarConfiguration(setOf(fragmentId))
         NavigationUI.setupActionBarWithNavController(
             activity,
@@ -53,13 +54,10 @@ abstract class BaseAccountFragment : DaggerFragment(){
     override fun onAttach(context: Context) {
         super.onAttach(context)
         try{
-            stateChangeListener = context as DataStateChangeListener
+            uiCommunicationListener = context as UICommunicationListener
         }catch(e: ClassCastException){
-            Log.e(TAG, "$context must implement DataStateChangeListener" )
+            Log.e(TAG, "$context must implement UICommunicationListener" )
         }
     }
 
-    fun cancelActiveJobs(){
-        viewModel.cancelActiveJobs()
-    }
 }

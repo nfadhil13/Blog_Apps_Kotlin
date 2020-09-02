@@ -5,14 +5,17 @@ import com.codingwithmitch.openapi.api.auth.OpenApiAuthService
 import com.codingwithmitch.openapi.persistence.AccountPropertiesDao
 import com.codingwithmitch.openapi.persistence.AuthTokenDao
 import com.codingwithmitch.openapi.repository.auth.AuthRepository
+import com.codingwithmitch.openapi.repository.auth.AuthRepositoryImpl
 import com.codingwithmitch.openapi.session.SessionManager
 import dagger.Module
 import dagger.Provides
+import kotlinx.coroutines.FlowPreview
 import retrofit2.Retrofit
 
 @Module
-class AuthModule {
+object AuthModule {
 
+    @JvmStatic
     @AuthScope
     @Provides
     fun provideFakeApiService(retrofitBuilder : Retrofit.Builder) : OpenApiAuthService{
@@ -21,7 +24,8 @@ class AuthModule {
             .create(OpenApiAuthService::class.java)
     }
 
-
+    @FlowPreview
+    @JvmStatic
     @AuthScope
     @Provides
     fun provideAuthRepository(
@@ -31,8 +35,8 @@ class AuthModule {
         openApiAuthService: OpenApiAuthService,
         sharedPreferences: SharedPreferences,
         sharedPreferencesEditor : SharedPreferences.Editor
-    ) : AuthRepository{
-        return AuthRepository(
+    ) : AuthRepository {
+        return AuthRepositoryImpl(
             authTokenDao,
             accountPropertiesDao,
             openApiAuthService,
